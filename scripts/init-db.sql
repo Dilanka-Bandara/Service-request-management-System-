@@ -1,0 +1,1 @@
+CREATE DATABASE srm_test;
