@@ -1,0 +1,105 @@
+generator client {
+  provider = "prisma-client-js"
+}
+datasource db {
+  provider = "postgresql"
+}
+enum Role {
+  USER
+  ADMIN
+}
+enum RequestStatus {
+  PENDING
+  IN_PROGRESS
+  RESOLVED
+  CANCELLED
+}
+enum RequestCategory {
+  TECHNICAL
+  BILLING
+  ACCOUNT
+  OTHER
+}
+enum RequestPriority {
+  LOW
+  MEDIUM
+  HIGH
+}
+model User {
+  id           String @id @default(uuid()) @db.Uuid
+  name         String @db.VarChar(100)
+  email        String @unique @db.VarChar(255)
+  passwordHash String
+  role         Role @default(USER)
+  isActive     Boolean @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  sessions     Session[]
+  requests     ServiceRequest[]
+  history      RequestHistory[]
+}
+model Session {
+  id        String @id @default(uuid()) @db.Uuid
+  tokenHash String @unique
+  userId    String @db.Uuid
+  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  @@index([userId])
+  @@index([expiresAt])
+}
+model ServiceRequest {
+  id          String @id @default(uuid()) @db.Uuid
+  title       String @db.VarChar(120)
+  description String @db.Text
+  category    RequestCategory
+  priority    RequestPriority @default(MEDIUM)
+  status      RequestStatus @default(PENDING)
+  createdById String @db.Uuid
+  createdBy   User @relation(fields: [createdById], references: [id], onDelete: Restrict)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  history     RequestHistory[]
+  attachments Attachment[]
+  @@index([createdById, createdAt])
+  @@index([status, createdAt])
+  @@index([category])
+  @@index([priority])
+}
+model RequestHistory {
+  id         String @id @default(uuid()) @db.Uuid
+  requestId  String @db.Uuid
+  request    ServiceRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  actorId    String @db.Uuid
+  actor      User @relation(fields: [actorId], references: [id], onDelete: Restrict)
+  action     String
+  fromStatus RequestStatus?
+  toStatus   RequestStatus?
+  note       String? @db.VarChar(500)
+  createdAt  DateTime @default(now())
+  @@index([requestId, createdAt])
+}
+// Bounded files in PostgreSQL survive ephemeral cloud filesystem restarts.
+model Attachment {
+  id        String @id @default(uuid()) @db.Uuid
+  requestId String @db.Uuid
+  request   ServiceRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  name      String @db.VarChar(200)
+  mimeType  String
+  size      Int
+  content   Bytes
+  createdAt DateTime @default(now())
+  @@index([requestId])
+}
+// Transactional outbox: request changes and their emails commit together.
+model Notification {
+  id          String @id @default(uuid()) @db.Uuid
+  recipient   String
+  subject     String
+  body        String
+  attempts    Int @default(0)
+  availableAt DateTime @default(now())
+  sentAt      DateTime?
+  createdAt   DateTime @default(now())
+  @@index([sentAt, availableAt])
+}

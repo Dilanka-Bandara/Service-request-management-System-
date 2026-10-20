@@ -14,17 +14,15 @@
     "typecheck": "npm run typecheck --workspaces",
     "test": "npm run test --workspaces",
     "db:migrate": "npm run db:migrate -w server",
-    "db:seed": "npm run db:seed -w server"
+    "db:seed": "npm run db:seed -w server",
+    "docs:export": "tsx scripts/export-api.ts"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.0",
     "concurrently": "^9.2.0",
-    "deepmerge-ts": "^8.0.2",
     "eslint": "^9.39.0",
     "prettier": "^3.6.0",
     "typescript-eslint": "^8.46.0"
   },
-  "overrides": {
-    "deepmerge-ts": "$deepmerge-ts"
-  }
+  "type": "module"
 }
