@@ -14,7 +14,7 @@ A full-stack workspace for submitting, tracking, and resolving service requests.
 - Pending-only content editing, controlled status transitions, soft cancellation, and activity timelines.
 - Administrator account activation and role changes with self/last-admin protections.
 - Authorized PDF, PNG, and JPEG uploads and downloads: five files per request, 5 MiB per file.
-- Persistent email outbox for request creation and status changes, with SMTP delivery and retry.
+- Persistent email outbox for request creation and status changes, with HTTPS (Resend) or SMTP delivery and retry.
 - Responsive layouts, dark mode, inline form validation, confirmations, and feedback states.
 - OpenAPI/Swagger documentation, Postman collection, PostgreSQL migrations, Docker, CI, and a Render Blueprint.
 
@@ -133,6 +133,8 @@ The built server also serves the React SPA. Set `CLIENT_ORIGIN` to the public or
 | `SMTP_SECURE`                | `true` for implicit TLS, normally port 465; otherwise STARTTLS is required |
 | `SMTP_USER`, `SMTP_PASSWORD` | Provider credentials, stored locally or in Render secrets                  |
 | `MAIL_FROM`                  | Sender address verified with the SMTP provider                             |
+| `RESEND_API_KEY`             | Optional HTTPS email provider key; required instead of SMTP on Render Free |
+| `SEED_ON_START`              | Enable idempotent demo seeding during container startup                    |
 
 All `.env` variants are ignored at every directory level, except `.env.example`. Docker also excludes them. CI rejects accidentally tracked environment files.
 
@@ -153,7 +155,7 @@ JSON mutations require `application/json`. State-changing requests validate the 
 7. Status writes use a conditional update. Stale changes return 409. History and notification records commit with the change.
 8. Administrators cannot demote or deactivate themselves. Serialized admin changes preserve an active administrator.
 9. Attachments may be added by the owner while pending. Downloads require the same visibility permission as the request.
-10. Email is queued for the owner on creation and status changes. No email is sent until SMTP is configured.
+10. Email is queued for the owner on creation and status changes. No email is sent until Resend or SMTP and a verified sender are configured.
 
 ## API documentation
 
@@ -187,7 +189,9 @@ Coverage includes all 16 status transitions, owner/admin permission combinations
 
 ## Render deployment
 
-See [the deployment runbook](docs/deployment.md). `render.yaml` provisions one Docker web service and PostgreSQL 16 in Singapore. Hosting and SMTP credentials must be supplied through Render’s environment settings. The Blueprint uses paid service/database plans; review the displayed pricing before creating resources.
+See [the deployment runbook](docs/deployment.md). `render.yaml` provisions a **Free** Docker web service and **Free** PostgreSQL 16 database in Singapore for the assignment demo. Render generates private seed passwords. Add an optional Resend API key and verified sender through Render’s environment settings to enable email over HTTPS.
+
+Free hosting sleeps after idle periods, and its database expires after 30 days. It blocks SMTP ports, so this deployment uses the HTTPS email option. See [Render's free-plan limits](https://render.com/docs/free).
 
 **Deployment configuration is included; a live production URL is not claimed until an account deployment has completed.**
 

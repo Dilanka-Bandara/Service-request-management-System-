@@ -15,6 +15,7 @@ export const env = z
     SMTP_USER: optional,
     SMTP_PASSWORD: optional,
     MAIL_FROM: optional,
+    RESEND_API_KEY: optional,
     SMTP_PORT: z.coerce.number().int().min(1).default(587),
     SMTP_SECURE: z
       .enum(['true', 'false'])
