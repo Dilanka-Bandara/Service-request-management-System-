@@ -59,13 +59,25 @@ try {
           history: {
             create: [
               { actorId: users[i % 3].id, action: 'CREATED', toStatus: 'PENDING' },
+              ...(status === 'RESOLVED'
+                ? [
+                    {
+                      actorId: admin.id,
+                      action: 'STATUS_CHANGED',
+                      fromStatus: RequestStatus.PENDING,
+                      toStatus: RequestStatus.IN_PROGRESS,
+                      note: 'Demonstration investigation',
+                    },
+                  ]
+                : []),
               ...(status === 'PENDING'
                 ? []
                 : [
                     {
                       actorId: admin.id,
                       action: 'STATUS_CHANGED',
-                      fromStatus: RequestStatus.PENDING,
+                      fromStatus:
+                        status === 'RESOLVED' ? RequestStatus.IN_PROGRESS : RequestStatus.PENDING,
                       toStatus: status,
                       note: 'Imported demonstration state',
                     },

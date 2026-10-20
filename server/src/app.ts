@@ -69,6 +69,12 @@ app.use((_req, _res) => {
   throw new AppError(404, 'ROUTE_NOT_FOUND', 'Route not found');
 });
 const errorHandler: ErrorRequestHandler = (error: unknown, _req, res, _next) => {
+  if (error && typeof error === 'object' && 'type' in error && error.type === 'entity.too.large') {
+    res
+      .status(413)
+      .json({ error: { code: 'PAYLOAD_TOO_LARGE', message: 'JSON payload exceeds 100 KiB' } });
+    return;
+  }
   if (error instanceof ZodError) {
     res.status(400).json({
       error: {

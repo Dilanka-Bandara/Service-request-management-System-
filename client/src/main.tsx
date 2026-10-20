@@ -14,26 +14,14 @@ import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/reac
 import { Toaster } from 'sonner';
 import { LayoutDashboard, Users as UsersIcon, Moon, Sun, LogOut, Menu, Plus } from 'lucide-react';
 import { useMe } from './features/api';
-import { api, ApiError } from './lib/api';
+import { api } from './lib/api';
 import { Auth } from './pages/Auth';
 import { Dashboard } from './pages/Dashboard';
 import { RequestForm } from './pages/RequestForm';
 import { RequestDetail } from './pages/RequestDetail';
 import { Users } from './pages/Users';
-import { ErrorState, Loading } from './components/shared';
+import { ProtectedRoute } from './routes/ProtectedRoute';
 import './styles.css';
-export function ProtectedRoute({ admin = false }: { admin?: boolean }) {
-  const me = useMe();
-  if (me.isPending) return <Loading />;
-  if (me.error)
-    return me.error instanceof ApiError && me.error.status === 401 ? (
-      <Navigate to="/login" replace />
-    ) : (
-      <ErrorState error={me.error} retry={() => me.refetch()} />
-    );
-  if (admin && me.data?.data.role !== 'ADMIN') return <Navigate to="/dashboard" replace />;
-  return <Outlet />;
-}
 function Layout() {
   const me = useMe();
   const navigate = useNavigate();

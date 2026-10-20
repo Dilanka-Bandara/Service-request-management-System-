@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import supertest from 'supertest';
 import { randomUUID } from 'node:crypto';
 import argon2 from 'argon2';
@@ -199,6 +199,32 @@ describe('request lifecycle, permissions and listings', () => {
     const empty = await other.get('/api/requests/stats').expect(200);
     expect(empty.body.data.total).toBe(0);
   });
+  it('commits only one of two concurrent identical status changes', async () => {
+    const created = await owner.post('/api/requests').send(body).expect(201);
+    const id = created.body.data.id;
+    const results = await Promise.all([
+      admin.patch(`/api/requests/${id}/status`).send({ status: 'IN_PROGRESS' }),
+      admin.patch(`/api/requests/${id}/status`).send({ status: 'IN_PROGRESS' }),
+    ]);
+    expect(results.map((r) => r.status).sort()).toEqual([200, 409]);
+    expect(
+      await prisma.requestHistory.count({ where: { requestId: id, action: 'STATUS_CHANGED' } }),
+    ).toBe(1);
+  });
+  it('enforces the five-file cap when uploads arrive together', async () => {
+    const created = await owner.post('/api/requests').send(body).expect(201);
+    const id = created.body.data.id;
+    const results = await Promise.all(
+      Array.from({ length: 6 }, (_, i) =>
+        owner
+          .post(`/api/requests/${id}/attachments`)
+          .attach('file', Buffer.from('%PDF-1.4\nsample'), `file-${i}.pdf`),
+      ),
+    );
+    expect(results.filter((r) => r.status === 201)).toHaveLength(5);
+    expect(results.filter((r) => r.status === 409)).toHaveLength(1);
+    expect(await prisma.attachment.count({ where: { requestId: id } })).toBe(5);
+  });
 });
 describe('user administration and session revocation', () => {
   it('protects the current admin and revokes disabled users sessions', async () => {
@@ -228,4 +254,41 @@ it('returns consistent JSON errors and a working health endpoint', async () => {
     .send('{broken')
     .expect(400);
   expect(invalid.body.error.code).toBe('INVALID_JSON');
+});
+it('hides internal error details', async () => {
+  const failure = vi
+    .spyOn(prisma, '$queryRaw')
+    .mockRejectedValueOnce(new Error('sensitive-internal-detail'));
+  try {
+    const result = await api.get('/api/health').expect(500);
+    expect(result.body.error.code).toBe('INTERNAL_ERROR');
+    expect(JSON.stringify(result.body)).not.toContain('sensitive-internal-detail');
+    expect(result.body.error.stack).toBeUndefined();
+  } finally {
+    failure.mockRestore();
+  }
+});
+it('rejects expired sessions and stores only a token hash', async () => {
+  const result = await api
+    .post('/api/auth/login')
+    .send({ email: 'other@test.example', password })
+    .expect(200);
+  const cookie = result.headers['set-cookie'][0].split(';')[0];
+  const raw = cookie.slice(4);
+  const account = await prisma.user.findUniqueOrThrow({ where: { email: 'other@test.example' } });
+  const sessions = await prisma.session.findMany({ where: { userId: account.id } });
+  expect(sessions.every((s) => s.tokenHash !== raw && s.tokenHash.length === 64)).toBe(true);
+  await prisma.session.updateMany({
+    where: { userId: account.id },
+    data: { expiresAt: new Date(0) },
+  });
+  await api.get('/api/auth/me').set('Cookie', cookie).expect(401);
+});
+it('limits repeated authentication attempts', async () => {
+  let status = 0;
+  for (let i = 0; i < 12; i++) {
+    status = (await api.post('/api/auth/login').send({ email: 'missing@test.example', password }))
+      .status;
+  }
+  expect(status).toBe(429);
 });
