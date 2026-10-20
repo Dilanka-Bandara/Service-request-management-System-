@@ -1,5 +1,12 @@
 # Verification
 
+Verified on 21 October 2026:
+
+- 58 backend tests and 5 frontend tests pass from a fresh local clone.
+- The fresh clone produces the production client and server builds.
+- GitHub Actions [run 39439331129](https://github.com/Dilanka-Bandara/Service-request-management-System-/actions/runs/39439331129) passed all checks, including PostgreSQL 16 tests and the dependency audit.
+- Only `.env.example` is tracked. A tracked-file scan confirmed the local seed passwords are absent from committed files.
+
 ## Automated
 
 - All 16 workflow state pairs and owner/non-owner/admin permission combinations.
