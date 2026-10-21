@@ -41,4 +41,8 @@ Render can redeploy a previous application commit. Database migrations are forwa
 
 ## Current completion boundary
 
-The public URL is recorded after the deployment health check succeeds. Real email delivery remains dependent on a configured provider and verified sender.
+The assignment demo is live at **https://resolve-service-requests.onrender.com**. Render deployed application commit `75c0da8` successfully; the public database health check and administrator login were verified on 21 October 2026. The free database expires on **20 November 2026**.
+
+Retrieve the administrator password privately from `SEED_ADMIN_PASSWORD` in the Render service's Environment page; use `admin@example.com` to sign in. Do not copy generated credentials into Git or public assignment material.
+
+Real email delivery remains pending: configure `RESEND_API_KEY` and a verified `MAIL_FROM` in Render. Notifications are queued until a provider is configured.

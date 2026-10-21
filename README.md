@@ -4,6 +4,8 @@
 
 A full-stack workspace for submitting, tracking, and resolving service requests. Members manage their own requests; administrators coordinate the queue and manage account access. Business rules, authorization, audit history, and notification creation are enforced by the API.
 
+**[Open the live assignment demo](https://resolve-service-requests.onrender.com)** · Hosted on Render Free. The first visit after idle may take about a minute. The demo database expires on **20 November 2026**. See the [deployment runbook](docs/deployment.md) for private login credentials and email setup.
+
 ![Administrator dashboard](docs/screenshots/dashboard.png)
 
 ## Features
